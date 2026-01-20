@@ -26,13 +26,21 @@ interface MapDataProps {
 const MapController: React.FC<{ site: string }> = ({ site }) => {
   const map = useMap();
   useEffect(() => {
+    // Force Leaflet to recalculate size when site changes or on mount
+    // Small timeout ensures the DOM has updated for flex layout
+    const timer = setTimeout(() => {
+      map.invalidateSize();
+    }, 100);
+
     if (site === 'A') {
-      map.flyTo([19.0760, 72.8777], 12); // Mumbai approx
+      map.flyTo([19.0760, 72.8777], 13); // Mumbai approx
     } else if (site === 'C') {
-      map.flyTo([19.2000, 72.9781], 12); // Shifted loc
+      map.flyTo([19.2000, 72.9781], 13); // Shifted loc
     } else {
-      map.flyTo([19.13, 72.92], 11); // Center of both
+      map.flyTo([19.13, 72.92], 12); // Center of both
     }
+
+    return () => clearTimeout(timer);
   }, [site, map]);
   return null;
 };
