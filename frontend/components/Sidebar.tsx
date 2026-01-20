@@ -40,7 +40,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   };
 
   return (
-    <div className="flex flex-col h-full bg-white dark:bg-gray-950 border-r border-gray-200 dark:border-gray-800 w-80 shadow-2xl z-20 overflow-hidden font-sans">
+    <div className="flex flex-col h-full bg-white dark:bg-gray-950 border-r border-gray-200 dark:border-gray-800 w-80 shadow-2xl z-[2000] overflow-hidden font-sans">
       <div className="p-6 bg-gradient-to-br from-indigo-600 to-blue-700 dark:from-indigo-900 dark:to-blue-900 text-white">
         <div className="flex items-center gap-3 mb-2">
           <div className="bg-white/20 p-2 rounded-lg backdrop-blur-md">

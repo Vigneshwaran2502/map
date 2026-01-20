@@ -82,6 +82,14 @@ export const MapData: React.FC<MapDataProps> = ({ activeLayers, allLayers, siteF
   const [geoData, setGeoData] = useState<Record<string, any>>({});
   const [zoom, setZoom] = useState(12);
 
+  // Force resize dispatch for Leaflet
+  useEffect(() => {
+    window.dispatchEvent(new Event('resize'));
+    setTimeout(() => {
+      window.dispatchEvent(new Event('resize'));
+    }, 500);
+  }, []);
+
   useEffect(() => {
     activeLayers.forEach(layerName => {
       if (!geoData[layerName]) {

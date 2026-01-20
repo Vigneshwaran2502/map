@@ -56,12 +56,18 @@ const App: React.FC = () => {
     return () => clearInterval(interval);
   }, [isTimeMode]);
 
-  // Update active layers for time mode
+  // Update active layers for time mode and reset when done
   useEffect(() => {
     if (isTimeMode && filters.site) {
       setActiveLayers([`Site${filters.site}_${animationYear}_Shoreline`]);
+    } else if (!isTimeMode && filters.site) {
+      // Restore default view (Baseline + 2020)
+      setActiveLayers([
+        `Site${filters.site}_${baselineYear}_Shoreline`,
+        `Site${filters.site}_2020_Shoreline`
+      ]);
     }
-  }, [animationYear, isTimeMode, filters.site]);
+  }, [animationYear, isTimeMode, filters.site, baselineYear]);
 
   const handleRunAnalysis = async () => {
     if (!filters.site) return;
