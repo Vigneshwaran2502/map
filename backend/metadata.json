@@ -1,172 +1,200 @@
 [
   {
-    "layer_name": "SiteA_2011_HTL",
+    "layer_name": "SiteA_2011_Shoreline",
     "site": "A",
     "year": 2011,
-    "parameter": "HTL",
+    "parameter": "Shoreline",
+    "crs": "EPSG:4326",
     "geometry": "LineString",
-    "crs": "EPSG:32643",
-    "source": "NCSCM / Hackathon Dataset",
-    "description": "High Tide Line for Site A (2011). Delineates the landward limit of the highest tide."
+    "source": "NCSCM"
   },
   {
-    "layer_name": "SiteA_2011_LTL",
+    "layer_name": "SiteA_2012_Shoreline",
     "site": "A",
+    "year": 2012,
+    "parameter": "Shoreline",
+    "crs": "EPSG:4326",
+    "geometry": "LineString",
+    "source": "NCSCM"
+  },
+  {
+    "layer_name": "SiteA_2013_Shoreline",
+    "site": "A",
+    "year": 2013,
+    "parameter": "Shoreline",
+    "crs": "EPSG:4326",
+    "geometry": "LineString",
+    "source": "NCSCM"
+  },
+  {
+    "layer_name": "SiteA_2014_Shoreline",
+    "site": "A",
+    "year": 2014,
+    "parameter": "Shoreline",
+    "crs": "EPSG:4326",
+    "geometry": "LineString",
+    "source": "NCSCM"
+  },
+  {
+    "layer_name": "SiteA_2015_Shoreline",
+    "site": "A",
+    "year": 2015,
+    "parameter": "Shoreline",
+    "crs": "EPSG:4326",
+    "geometry": "LineString",
+    "source": "NCSCM"
+  },
+  {
+    "layer_name": "SiteA_2016_Shoreline",
+    "site": "A",
+    "year": 2016,
+    "parameter": "Shoreline",
+    "crs": "EPSG:4326",
+    "geometry": "LineString",
+    "source": "NCSCM"
+  },
+  {
+    "layer_name": "SiteA_2017_Shoreline",
+    "site": "A",
+    "year": 2017,
+    "parameter": "Shoreline",
+    "crs": "EPSG:4326",
+    "geometry": "LineString",
+    "source": "NCSCM"
+  },
+  {
+    "layer_name": "SiteA_2018_Shoreline",
+    "site": "A",
+    "year": 2018,
+    "parameter": "Shoreline",
+    "crs": "EPSG:4326",
+    "geometry": "LineString",
+    "source": "NCSCM"
+  },
+  {
+    "layer_name": "SiteA_2019_Shoreline",
+    "site": "A",
+    "year": 2019,
+    "parameter": "Shoreline",
+    "crs": "EPSG:4326",
+    "geometry": "LineString",
+    "source": "NCSCM"
+  },
+  {
+    "layer_name": "SiteA_2020_Shoreline",
+    "site": "A",
+    "year": 2020,
+    "parameter": "Shoreline",
+    "crs": "EPSG:4326",
+    "geometry": "LineString",
+    "source": "NCSCM"
+  },
+  {
+    "layer_name": "SiteC_2011_Shoreline",
+    "site": "C",
     "year": 2011,
-    "parameter": "LTL",
+    "parameter": "Shoreline",
+    "crs": "EPSG:4326",
     "geometry": "LineString",
-    "crs": "EPSG:32643",
-    "source": "NCSCM / Hackathon Dataset",
-    "description": "Low Tide Line for Site A (2011). Delineates the seaward limit of the tide."
+    "source": "NCSCM"
   },
   {
-    "layer_name": "SiteA_2011_CRZ",
-    "site": "A",
-    "year": 2011,
-    "parameter": "CRZ",
-    "geometry": "Polygon",
-    "crs": "EPSG:32643",
-    "source": "NCSCM / Hackathon Dataset",
-    "description": "Coastal Regulation Zone boundary for Site A (2011)."
-  },
-  {
-    "layer_name": "SiteA_2019_HTL",
-    "site": "A",
-    "year": 2019,
-    "parameter": "HTL",
+    "layer_name": "SiteC_2012_Shoreline",
+    "site": "C",
+    "year": 2012,
+    "parameter": "Shoreline",
+    "crs": "EPSG:4326",
     "geometry": "LineString",
-    "crs": "EPSG:32643",
-    "source": "NCSCM / Hackathon Dataset",
-    "description": "High Tide Line for Site A (2019). Updated based on recent satellite imagery."
+    "source": "NCSCM"
   },
   {
-    "layer_name": "SiteA_2019_CRZ",
-    "site": "A",
-    "year": 2019,
-    "parameter": "CRZ",
-    "geometry": "Polygon",
-    "crs": "EPSG:32643",
-    "source": "NCSCM / Hackathon Dataset",
-    "description": "Coastal Regulation Zone boundary for Site A (2019)."
-  },
-  {
-    "layer_name": "SiteA_2019_SEA",
-    "site": "A",
-    "year": 2019,
-    "parameter": "SEA",
-    "geometry": "Polygon",
-    "crs": "EPSG:32643",
-    "source": "NCSCM / Hackathon Dataset",
-    "description": "Sea classification area for Site A (2019)."
-  },
-  {
-    "layer_name": "SiteA_2019_CREEK",
-    "site": "A",
-    "year": 2019,
-    "parameter": "CREEK",
-    "geometry": "Polygon",
-    "crs": "EPSG:32643",
-    "source": "NCSCM / Hackathon Dataset",
-    "description": "Creek water body demarcation for Site A (2019)."
-  },
-  {
-    "layer_name": "SiteC_2011_HTL",
+    "layer_name": "SiteC_2013_Shoreline",
     "site": "C",
-    "year": 2011,
-    "parameter": "HTL",
+    "year": 2013,
+    "parameter": "Shoreline",
+    "crs": "EPSG:4326",
     "geometry": "LineString",
-    "crs": "EPSG:32643",
-    "source": "NCSCM / Hackathon Dataset",
-    "description": "High Tide Line for Site C (2011)."
+    "source": "NCSCM"
   },
   {
-    "layer_name": "SiteC_2011_LTL",
+    "layer_name": "SiteC_2014_Shoreline",
     "site": "C",
-    "year": 2011,
-    "parameter": "LTL",
+    "year": 2014,
+    "parameter": "Shoreline",
+    "crs": "EPSG:4326",
     "geometry": "LineString",
-    "crs": "EPSG:32643",
-    "source": "NCSCM / Hackathon Dataset",
-    "description": "Low Tide Line for Site C (2011)."
+    "source": "NCSCM"
   },
   {
-    "layer_name": "SiteC_2011_CRZ",
+    "layer_name": "SiteC_2015_Shoreline",
     "site": "C",
-    "year": 2011,
-    "parameter": "CRZ",
-    "geometry": "Polygon",
-    "crs": "EPSG:32643",
-    "source": "NCSCM / Hackathon Dataset",
-    "description": "Coastal Regulation Zone for Site C (2011)."
-  },
-  {
-    "layer_name": "SiteC_2019_HTL",
-    "site": "C",
-    "year": 2019,
-    "parameter": "HTL",
+    "year": 2015,
+    "parameter": "Shoreline",
+    "crs": "EPSG:4326",
     "geometry": "LineString",
-    "crs": "EPSG:32643",
-    "source": "NCSCM / Hackathon Dataset",
-    "description": "High Tide Line for Site C (2019)."
+    "source": "NCSCM"
   },
   {
-    "layer_name": "SiteC_2019_LTL",
+    "layer_name": "SiteC_2016_Shoreline",
     "site": "C",
-    "year": 2019,
-    "parameter": "LTL",
+    "year": 2016,
+    "parameter": "Shoreline",
+    "crs": "EPSG:4326",
     "geometry": "LineString",
-    "crs": "EPSG:32643",
-    "source": "NCSCM / Hackathon Dataset",
-    "description": "Low Tide Line for Site C (2019)."
+    "source": "NCSCM"
   },
   {
-    "layer_name": "SiteC_2019_CRZ",
+    "layer_name": "SiteC_2017_Shoreline",
     "site": "C",
-    "year": 2019,
-    "parameter": "CRZ",
-    "geometry": "Polygon",
-    "crs": "EPSG:32643",
-    "source": "NCSCM / Hackathon Dataset",
-    "description": "Coastal Regulation Zone for Site C (2019)."
+    "year": 2017,
+    "parameter": "Shoreline",
+    "crs": "EPSG:4326",
+    "geometry": "LineString",
+    "source": "NCSCM"
   },
   {
-    "layer_name": "SiteC_2019_SEA",
+    "layer_name": "SiteC_2018_Shoreline",
     "site": "C",
-    "year": 2019,
-    "parameter": "SEA",
-    "geometry": "Polygon",
-    "crs": "EPSG:32643",
-    "source": "NCSCM / Hackathon Dataset",
-    "description": "Sea area for Site C (2019)."
+    "year": 2018,
+    "parameter": "Shoreline",
+    "crs": "EPSG:4326",
+    "geometry": "LineString",
+    "source": "NCSCM"
   },
   {
-    "layer_name": "SiteC_2019_CREEK",
+    "layer_name": "SiteC_2019_Shoreline",
     "site": "C",
     "year": 2019,
-    "parameter": "CREEK",
-    "geometry": "Polygon",
-    "crs": "EPSG:32643",
-    "source": "NCSCM / Hackathon Dataset",
-    "description": "Creek area for Site C (2019)."
+    "parameter": "Shoreline",
+    "crs": "EPSG:4326",
+    "geometry": "LineString",
+    "source": "NCSCM"
+  },
+  {
+    "layer_name": "SiteC_2020_Shoreline",
+    "site": "C",
+    "year": 2020,
+    "parameter": "Shoreline",
+    "crs": "EPSG:4326",
+    "geometry": "LineString",
+    "source": "NCSCM"
   },
   {
     "layer_name": "Site1_Boundary",
     "site": "C",
-    "year": 2019,
+    "year": 2020,
     "parameter": "Boundary",
+    "crs": "EPSG:4326",
     "geometry": "Polygon",
-    "crs": "EPSG:32643",
-    "source": "NCSCM / Hackathon Dataset",
-    "description": "Administrative Boundary for Site C."
+    "source": "Admin"
   },
   {
     "layer_name": "Site2_Boundary",
     "site": "A",
-    "year": 2019,
+    "year": 2020,
     "parameter": "Boundary",
+    "crs": "EPSG:4326",
     "geometry": "Polygon",
-    "crs": "EPSG:32643",
-    "source": "NCSCM / Hackathon Dataset",
-    "description": "Administrative Boundary for Site A."
+    "source": "Admin"
   }
 ]

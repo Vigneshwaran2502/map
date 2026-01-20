@@ -2,11 +2,11 @@ export interface LayerMetadata {
   layer_name: string;
   site: 'A' | 'C';
   year: number;
-  parameter: 'HTL' | 'LTL' | 'CRZ' | 'SEA' | 'CREEK' | 'Boundary';
+  parameter: 'Shoreline' | 'Boundary' | 'HTL' | 'LTL' | 'CRZ' | 'SEA' | 'CREEK';
   geometry: 'LineString' | 'Polygon';
   crs: string;
   source: string;
-  description: string;
+  description?: string;
 }
 
 export interface FilterState {
@@ -17,5 +17,5 @@ export interface FilterState {
 }
 
 export const SITES = ['A', 'C'];
-export const YEARS = ['2011', '2019'];
-export const PARAMETERS = ['HTL', 'LTL', 'CRZ', 'SEA', 'CREEK', 'Boundary'];
+export const YEARS = Array.from({ length: 10 }, (_, i) => 2011 + i);
+export const PARAMETERS = ['Shoreline', 'Boundary', 'HTL', 'LTL', 'CRZ', 'SEA', 'CREEK'];

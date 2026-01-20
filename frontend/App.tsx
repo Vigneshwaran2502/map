@@ -1,204 +1,173 @@
 import React, { useState, useEffect } from 'react';
 import { Sidebar } from './components/Sidebar';
 import { MapData } from './components/MapData';
-import { MetadataPanel } from './components/MetadataPanel';
-import { TimeController } from './components/TimeController';
+import { InsightsPanel } from './components/InsightsPanel';
 import { LayerMetadata, FilterState, YEARS } from './types';
-import { fetchMetadata } from './services/api';
+import { fetchMetadata, runShorelineAnalysis } from './services/api';
+import { motion, AnimatePresence } from 'framer-motion';
 
 const App: React.FC = () => {
-  const [darkMode, setDarkMode] = useState(false);
   const [filters, setFilters] = useState<FilterState>({
-    site: '',
-    year: '',
-    parameter: '',
+    site: 'A',
+    year: '2020',
+    parameter: 'Shoreline',
     search: ''
   });
 
+  const [baselineYear, setBaselineYear] = useState(2011);
   const [availableLayers, setAvailableLayers] = useState<LayerMetadata[]>([]);
   const [activeLayers, setActiveLayers] = useState<string[]>([]);
-  const [selectedMetadata, setSelectedMetadata] = useState<LayerMetadata | null>(null);
+  const [analysisResults, setAnalysisResults] = useState<any>(null);
+  const [analysisLoading, setAnalysisLoading] = useState(false);
+  const [showInsights, setShowInsights] = useState(false);
 
-  // Animation State
   const [isTimeMode, setIsTimeMode] = useState(false);
-  const [isPlaying, setIsPlaying] = useState(false);
   const [animationYear, setAnimationYear] = useState<number>(2011);
-  const animationYears = [2011, 2019]; // These correspond to data available in metadata
-
-  // Toggle Dark Mode
-  useEffect(() => {
-    if (darkMode) {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
-  }, [darkMode]);
+  const [debugMode, setDebugMode] = useState(false);
 
   // Fetch layers when filters change
   useEffect(() => {
-    // In Time Mode, we ignore the year filter for fetching available layers 
-    // because we need all years to be available for the animation to switch between.
-    const effectiveFilters = isTimeMode ? { ...filters, year: '' } : filters;
-
-    fetchMetadata(effectiveFilters)
-      .then(data => {
-        setAvailableLayers(data);
-      })
+    fetchMetadata(filters)
+      .then(data => setAvailableLayers(data))
       .catch(console.error);
-  }, [filters, isTimeMode]);
+  }, [filters]);
 
-  // Time Mode Logic: Automatically update active layers based on animationYear
+  // Initial setup: Show baseline and latest shoreline
   useEffect(() => {
-    if (isTimeMode) {
-      // Find layers that match current filter (Site, Param) and current Animation Year
-      const targetSite = filters.site || 'A'; // Default to A if generic
-      const targetParam = filters.parameter || 'HTL'; // Default to HTL if generic
-
-      // Construct likely layer name or find in available
-      const layersToShow = availableLayers
-        .filter(l => 
-          l.year === animationYear && 
-          (filters.site ? l.site === filters.site : true) && // strict if selected
-          (filters.parameter ? l.parameter === filters.parameter : l.parameter === 'HTL') // strict if selected, else HTL default
-        )
-        .map(l => l.layer_name);
-
-      // If no strict match found (e.g. user hasn't selected site), try a fallback for demo
-      if (layersToShow.length === 0) {
-          // Fallback: Try to show Site A HTL for the animation year
-          const fallbackName = `Site${targetSite}_${animationYear}_${targetParam}`;
-          // Check if this exists in full metadata (conceptually) or just set it
-          setActiveLayers([fallbackName]);
-      } else {
-          setActiveLayers(layersToShow);
-      }
+    if (filters.site) {
+      setActiveLayers([
+        `Site${filters.site}_${baselineYear}_Shoreline`,
+        `Site${filters.site}_2020_Shoreline`
+      ]);
     }
-  }, [isTimeMode, animationYear, availableLayers, filters.site, filters.parameter]);
+  }, [filters.site, baselineYear]);
 
   // Animation Loop
   useEffect(() => {
     let interval: any;
-    if (isTimeMode && isPlaying) {
+    if (isTimeMode) {
       interval = setInterval(() => {
         setAnimationYear(prev => {
-           const idx = animationYears.indexOf(prev);
-           // Loop back to start
-           const nextIdx = (idx + 1) % animationYears.length;
-           return animationYears[nextIdx];
+          const next = prev + 1;
+          return next > 2020 ? 2011 : next;
         });
-      }, 1500); // 1.5s per frame for better visibility
+      }, 1000);
     }
     return () => clearInterval(interval);
-  }, [isTimeMode, isPlaying]);
+  }, [isTimeMode]);
 
+  // Update active layers for time mode
+  useEffect(() => {
+    if (isTimeMode && filters.site) {
+      setActiveLayers([`Site${filters.site}_${animationYear}_Shoreline`]);
+    }
+  }, [animationYear, isTimeMode, filters.site]);
+
+  const handleRunAnalysis = async () => {
+    if (!filters.site) return;
+    setAnalysisLoading(true);
+    setShowInsights(true);
+
+    try {
+      const comparisonYears = filters.year ? [Number(filters.year)] : YEARS.filter(y => y > baselineYear);
+      const results = await runShorelineAnalysis(filters.site, baselineYear, comparisonYears);
+      setAnalysisResults(results);
+    } catch (err) {
+      console.error(err);
+      alert("Analysis failed: Ensure backend is running.");
+    } finally {
+      setAnalysisLoading(false);
+    }
+  };
+
+  const handleExport = (format: 'json' | 'csv') => {
+    if (!analysisResults) return;
+    const blob = new Blob([format === 'json' ? JSON.stringify(analysisResults, null, 2) : "Site,Year,Metric\n" + analysisResults.site + "," + analysisResults.comparisonYear + "," + analysisResults.netChangeSqm], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `Coastal_Analysis_Report.${format}`;
+    a.click();
+  };
 
   const toggleLayer = (layerName: string) => {
-    setActiveLayers(prev => 
-      prev.includes(layerName) 
-        ? prev.filter(n => n !== layerName) 
+    setActiveLayers(prev =>
+      prev.includes(layerName)
+        ? prev.filter(n => n !== layerName)
         : [...prev, layerName]
     );
   };
 
-  const handleCompareHTL = () => {
-    const targetSite = filters.site || 'A'; 
-    setFilters({
-      site: targetSite,
-      year: '',
-      parameter: 'HTL',
-      search: ''
-    });
-    const layersToActivate = [
-      `Site${targetSite}_2011_HTL`,
-      `Site${targetSite}_2019_HTL`
-    ];
-    setActiveLayers(layersToActivate);
-  };
-
-  const toggleTimeMode = () => {
-    if (!isTimeMode) {
-      // Entering Time Mode
-      setIsTimeMode(true);
-      setIsPlaying(true);
-      // Reset filters to ensure we have something to animate
-      setFilters(prev => ({ ...prev, year: '' }));
-      if (!filters.parameter) {
-          setFilters(prev => ({ ...prev, parameter: 'HTL' }));
-      }
-      if (!filters.site) {
-          setFilters(prev => ({ ...prev, site: 'A' }));
-      }
-    } else {
-      // Exiting Time Mode
-      setIsTimeMode(false);
-      setIsPlaying(false);
-      setActiveLayers([]); // Clear map or revert to previous state (simplest is clear)
-    }
-  };
-
   return (
-    <div className="flex h-screen w-screen overflow-hidden bg-gray-100 dark:bg-gray-900 font-sans text-gray-900 dark:text-gray-100">
-      
-      {/* Sidebar */}
-      <Sidebar 
-        filters={filters} 
+    <div className="flex h-screen w-screen overflow-hidden bg-gray-50 dark:bg-black font-sans selection:bg-indigo-500 selection:text-white">
+
+      <Sidebar
+        filters={filters}
         setFilters={setFilters}
         availableLayers={availableLayers}
         activeLayers={activeLayers}
         toggleLayer={toggleLayer}
-        onCompareHTL={handleCompareHTL}
-        onTimeMode={toggleTimeMode}
-        onLayerClick={setSelectedMetadata}
+        onTimeMode={() => setIsTimeMode(!isTimeMode)}
         isTimeMode={isTimeMode}
+        onRunAnalysis={handleRunAnalysis}
+        analysisLoading={analysisLoading}
+        debugMode={debugMode}
+        setDebugMode={setDebugMode}
+        baselineYear={baselineYear}
+        setBaselineYear={setBaselineYear}
       />
 
-      {/* Main Content */}
-      <div className="flex-1 relative flex flex-col">
-        
-        {/* Top Bar (Dark Mode Toggle) */}
-        <div className="absolute top-4 right-4 z-10">
-          <button 
-            onClick={() => setDarkMode(!darkMode)}
-            className="bg-white dark:bg-gray-800 p-2 rounded-full shadow-md text-gray-600 dark:text-yellow-400 hover:text-gray-900 focus:outline-none"
-            title="Toggle Dark Mode"
-          >
-            {darkMode ? (
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
-            ) : (
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" /></svg>
-            )}
-          </button>
+      <main className="flex-1 relative flex flex-col bg-gray-100 dark:bg-gray-950">
+
+        {/* Map Container */}
+        <div className="flex-1 min-h-[600px] transition-all duration-500 ease-in-out">
+          <MapData
+            activeLayers={activeLayers}
+            allLayers={availableLayers}
+            siteFilter={filters.site || 'A'}
+            heatmapPoints={analysisResults?.heatmapPoints}
+            debugMode={debugMode}
+          />
         </div>
 
-        {/* Map */}
-        <MapData 
-          activeLayers={activeLayers} 
-          allLayers={availableLayers}
-          siteFilter={filters.site || 'A'}
-        />
+        {/* Time Mode Indicator Overlay */}
+        <AnimatePresence>
+          {isTimeMode && (
+            <motion.div
+              initial={{ opacity: 0, y: 50 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 50 }}
+              className="absolute bottom-8 left-1/2 -translate-x-1/2 px-8 py-4 bg-gray-900/90 backdrop-blur-xl border border-white/10 rounded-3xl shadow-2xl z-[1000] flex items-center gap-8 text-white min-w-[400px]"
+            >
+              <div className="flex flex-col">
+                <span className="text-[10px] font-black uppercase tracking-[0.3em] text-indigo-400 mb-1">Animation Timeline</span>
+                <div className="text-3xl font-black tracking-tighter transition-all duration-300 tabular-nums">{animationYear}</div>
+              </div>
+              <div className="flex-1 h-1 bg-white/10 rounded-full overflow-hidden">
+                <motion.div
+                  className="h-full bg-indigo-500 shadow-[0_0_15px_rgba(99,102,241,0.5)]"
+                  animate={{ width: `${((animationYear - 2011) / 9) * 100}%` }}
+                />
+              </div>
+              <div className="flex items-center gap-2 text-[10px] font-bold uppercase text-gray-400">
+                <div className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse"></div>
+                Live Deck
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
-        {/* Time Controller Overlay */}
-        {isTimeMode && (
-          <TimeController 
-            years={animationYears}
-            currentYear={animationYear}
-            isPlaying={isPlaying}
-            onPlayPause={() => setIsPlaying(!isPlaying)}
-            onYearChange={(y) => {
-              setIsPlaying(false); // Pause if user manually scrubs
-              setAnimationYear(y);
-            }}
-            onClose={toggleTimeMode}
+        {/* Analytics Insights Overlay */}
+        {showInsights && (
+          <InsightsPanel
+            results={analysisResults}
+            loading={analysisLoading}
+            onExport={handleExport}
+            onClose={() => setShowInsights(false)}
           />
         )}
 
-      </div>
-
-      {/* Right Panel (Metadata) */}
-      <MetadataPanel 
-        layer={selectedMetadata} 
-        onClose={() => setSelectedMetadata(null)} 
-      />
+      </main>
 
     </div>
   );
