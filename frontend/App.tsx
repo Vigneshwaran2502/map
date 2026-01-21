@@ -1,12 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { Sidebar } from './components/Sidebar';
-import { MapData } from './components/MapData';
-import { InsightsPanel } from './components/InsightsPanel';
-import { LayerMetadata, FilterState, YEARS } from './types';
-import { fetchMetadata, runShorelineAnalysis } from './services/api';
-import { motion, AnimatePresence } from 'framer-motion';
+import { MapView } from './components/MapView';
+import { AnalyticalView } from './components/AnalyticalView';
+import { ChangeInsights } from './components/ChangeInsights';
+import { FilterState, LayerMetadata } from './types';
+import { fetchMetadata } from './services/api';
+import { useCoastalAnalysis } from './hooks/useCoastalAnalysis';
 
 const App: React.FC = () => {
+  // --- STATE ---
+  const [viewMode, setViewMode] = useState<'standard' | 'analytical'>('standard');
+
   const [filters, setFilters] = useState<FilterState>({
     site: 'A',
     year: '2020',
@@ -17,22 +21,25 @@ const App: React.FC = () => {
   const [baselineYear, setBaselineYear] = useState(2011);
   const [availableLayers, setAvailableLayers] = useState<LayerMetadata[]>([]);
   const [activeLayers, setActiveLayers] = useState<string[]>([]);
-  const [analysisResults, setAnalysisResults] = useState<any>(null);
-  const [analysisLoading, setAnalysisLoading] = useState(false);
   const [showInsights, setShowInsights] = useState(false);
 
+  // Time Animation State
   const [isTimeMode, setIsTimeMode] = useState(false);
   const [animationYear, setAnimationYear] = useState<number>(2011);
   const [debugMode, setDebugMode] = useState(false);
 
-  // Fetch layers when filters change
+  const { results, loading, runAnalysis } = useCoastalAnalysis();
+
+  // --- EFFECTS ---
+
+  // Fetch layers metadata
   useEffect(() => {
     fetchMetadata(filters)
       .then(data => setAvailableLayers(data))
       .catch(console.error);
   }, [filters]);
 
-  // Initial setup: Show baseline and latest shoreline
+  // Initial Layer Setup
   useEffect(() => {
     if (filters.site) {
       setActiveLayers([
@@ -49,132 +56,112 @@ const App: React.FC = () => {
       interval = setInterval(() => {
         setAnimationYear(prev => {
           const next = prev + 1;
-          return next > 2020 ? 2011 : next;
+          // Loop between baseline and target (simplify to 2020 for now)
+          return next > 2020 ? baselineYear : next;
         });
       }, 1000);
     }
     return () => clearInterval(interval);
-  }, [isTimeMode]);
+  }, [isTimeMode, baselineYear]);
 
-  // Update active layers for time mode and reset when done
+  // Sync animation with active layers
   useEffect(() => {
     if (isTimeMode && filters.site) {
       setActiveLayers([`Site${filters.site}_${animationYear}_Shoreline`]);
-    } else if (!isTimeMode && filters.site) {
-      // Restore default view (Baseline + 2020)
+    } else if (!isTimeMode && filters.site && activeLayers.length < 2) {
+      // Restore default view if stopped
       setActiveLayers([
         `Site${filters.site}_${baselineYear}_Shoreline`,
-        `Site${filters.site}_2020_Shoreline`
+        `Site${filters.site}_${filters.year || 2020}_Shoreline`
       ]);
     }
-  }, [animationYear, isTimeMode, filters.site, baselineYear]);
+  }, [animationYear, isTimeMode, filters.site]);
+
+  // --- HANDLERS ---
 
   const handleRunAnalysis = async () => {
     if (!filters.site) return;
-    setAnalysisLoading(true);
     setShowInsights(true);
-
-    try {
-      const comparisonYears = filters.year ? [Number(filters.year)] : YEARS.filter(y => y > baselineYear);
-      const results = await runShorelineAnalysis(filters.site, baselineYear, comparisonYears);
-      setAnalysisResults(results);
-    } catch (err) {
-      console.error(err);
-      alert("Analysis failed: Ensure backend is running.");
-    } finally {
-      setAnalysisLoading(false);
-    }
+    await runAnalysis(filters.site, baselineYear, filters.year || 2020);
   };
 
   const handleExport = (format: 'json' | 'csv') => {
-    if (!analysisResults) return;
-    const blob = new Blob([format === 'json' ? JSON.stringify(analysisResults, null, 2) : "Site,Year,Metric\n" + analysisResults.site + "," + analysisResults.comparisonYear + "," + analysisResults.netChangeSqm], { type: 'text/plain' });
+    if (!results) return;
+    const blob = new Blob(
+      [format === 'json' ? JSON.stringify(results, null, 2) :
+        `Site,Year,NetChange\n${results.site},${results.comparisonYear},${results.netChangeSqm}`],
+      { type: 'text/plain' }
+    );
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `Coastal_Analysis_Report.${format}`;
+    a.download = `Coastal_Report.${format}`;
     a.click();
   };
 
   const toggleLayer = (layerName: string) => {
     setActiveLayers(prev =>
-      prev.includes(layerName)
-        ? prev.filter(n => n !== layerName)
-        : [...prev, layerName]
+      prev.includes(layerName) ? prev.filter(n => n !== layerName) : [...prev, layerName]
     );
   };
 
+  const targetYear = Number(filters.year || 2020);
+
   return (
-    <div className="flex h-screen w-screen overflow-hidden bg-gray-50 dark:bg-black font-sans selection:bg-indigo-500 selection:text-white">
+    <div className="flex h-screen w-screen overflow-hidden bg-black font-sans selection:bg-cyan-500 selection:text-black">
 
       <Sidebar
         filters={filters}
         setFilters={setFilters}
         availableLayers={availableLayers}
         activeLayers={activeLayers}
-        toggleLayer={toggleLayer}
+        toggleLayer={toggleLayer} // Optional usages
         onTimeMode={() => setIsTimeMode(!isTimeMode)}
         isTimeMode={isTimeMode}
         onRunAnalysis={handleRunAnalysis}
-        analysisLoading={analysisLoading}
+        analysisLoading={loading}
         debugMode={debugMode}
         setDebugMode={setDebugMode}
         baselineYear={baselineYear}
         setBaselineYear={setBaselineYear}
+        viewMode={viewMode}
+        setViewMode={setViewMode}
       />
 
-      <main className="flex-1 relative flex flex-col bg-gray-100 dark:bg-gray-950">
+      <main className="flex-1 relative flex flex-col bg-gray-950">
 
-        {/* Map Container */}
-        <div className="flex-1 min-h-[600px] transition-all duration-500 ease-in-out">
-          <MapData
+        {viewMode === 'standard' ? (
+          <MapView
             activeLayers={activeLayers}
             allLayers={availableLayers}
             siteFilter={filters.site || 'A'}
-            heatmapPoints={analysisResults?.heatmapPoints}
+            heatmapPoints={results?.heatmapPoints}
             debugMode={debugMode}
+            animationYear={animationYear}
+            isTimeMode={isTimeMode}
+            baselineYear={baselineYear}
+            comparisonYear={targetYear}
           />
-        </div>
+        ) : (
+          <AnalyticalView
+            site={filters.site || 'A'}
+            baselineYear={baselineYear}
+            targetYear={targetYear}
+            heatmapPoints={results?.heatmapPoints}
+          />
+        )}
 
-        {/* Time Mode Indicator Overlay */}
-        <AnimatePresence>
-          {isTimeMode && (
-            <motion.div
-              initial={{ opacity: 0, y: 50 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 50 }}
-              className="absolute bottom-8 left-1/2 -translate-x-1/2 px-8 py-4 bg-gray-900/90 backdrop-blur-xl border border-white/10 rounded-3xl shadow-2xl z-[1000] flex items-center gap-8 text-white min-w-[400px]"
-            >
-              <div className="flex flex-col">
-                <span className="text-[10px] font-black uppercase tracking-[0.3em] text-indigo-400 mb-1">Animation Timeline</span>
-                <div className="text-3xl font-black tracking-tighter transition-all duration-300 tabular-nums">{animationYear}</div>
-              </div>
-              <div className="flex-1 h-1 bg-white/10 rounded-full overflow-hidden">
-                <motion.div
-                  className="h-full bg-indigo-500 shadow-[0_0_15px_rgba(99,102,241,0.5)]"
-                  animate={{ width: `${((animationYear - 2011) / 9) * 100}%` }}
-                />
-              </div>
-              <div className="flex items-center gap-2 text-[10px] font-bold uppercase text-gray-400">
-                <div className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse"></div>
-                Live Deck
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        {/* Analytics Insights Overlay */}
+        {/* Floating Insights Panel (Right) - Visible in both modes or just standard? User requirement implies Right Panel. */}
         {showInsights && (
-          <InsightsPanel
-            results={analysisResults}
-            loading={analysisLoading}
+          <ChangeInsights
+            results={results}
+            loading={loading}
             onExport={handleExport}
             onClose={() => setShowInsights(false)}
           />
         )}
 
       </main>
-
     </div>
   );
 };

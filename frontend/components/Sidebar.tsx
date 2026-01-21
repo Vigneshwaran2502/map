@@ -1,7 +1,6 @@
 import React from 'react';
-import { motion } from 'framer-motion';
-import { Settings, Info, Play, Pause, BarChart3, Database, Search, Map as MapIcon, RotateCcw } from 'lucide-react';
-import { LayerMetadata, FilterState, SITES, YEARS, PARAMETERS } from '../types';
+import { FilterState, LayerMetadata, YEARS } from '../types';
+import { Play, Loader2, Map as MapIcon, Layers, Radio, Settings, StopCircle, LayoutDashboard, SplitSquareHorizontal } from 'lucide-react';
 
 interface SidebarProps {
   filters: FilterState;
@@ -14,167 +13,140 @@ interface SidebarProps {
   onRunAnalysis: () => void;
   analysisLoading: boolean;
   debugMode: boolean;
-  setDebugMode: (val: boolean) => void;
+  setDebugMode: (mode: boolean) => void;
   baselineYear: number;
-  setBaselineYear: (y: number) => void;
+  setBaselineYear: (year: number) => void;
+  viewMode: 'standard' | 'analytical';
+  setViewMode: (mode: 'standard' | 'analytical') => void;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
-  filters,
-  setFilters,
-  availableLayers,
-  activeLayers,
-  toggleLayer,
-  onTimeMode,
-  isTimeMode,
-  onRunAnalysis,
-  analysisLoading,
-  debugMode,
-  setDebugMode,
-  baselineYear,
-  setBaselineYear
+  filters, setFilters, availableLayers, activeLayers, toggleLayer,
+  onTimeMode, isTimeMode, onRunAnalysis, analysisLoading,
+  debugMode, setDebugMode, baselineYear, setBaselineYear,
+  viewMode, setViewMode
 }) => {
 
-  const handleFilterChange = (key: keyof FilterState, value: string) => {
-    setFilters(prev => ({ ...prev, [key]: value }));
-  };
+  const sites = ['A', 'C']; // Expanded as needed
 
   return (
-    <div className="flex flex-col h-full bg-white dark:bg-gray-950 border-r border-gray-200 dark:border-gray-800 w-80 shadow-2xl z-[2000] overflow-hidden font-sans">
-      <div className="p-6 bg-gradient-to-br from-indigo-600 to-blue-700 dark:from-indigo-900 dark:to-blue-900 text-white">
-        <div className="flex items-center gap-3 mb-2">
-          <div className="bg-white/20 p-2 rounded-lg backdrop-blur-md">
-            <MapIcon size={20} className="text-white" />
-          </div>
-          <h1 className="text-lg font-black uppercase tracking-tighter leading-none">Coastal Change<br /><span className="text-indigo-200">Intelligence</span></h1>
-        </div>
-        <p className="text-[10px] uppercase tracking-[0.2em] font-bold text-indigo-200/60">Hackathon Prototype v2.0</p>
+    <div className="w-[340px] h-full flex flex-col bg-gray-900 border-r border-gray-800 backdrop-blur-xl relative z-20 text-white shadow-2xl">
+
+      {/* Header */}
+      <div className="p-6 border-b border-gray-800 bg-gradient-to-r from-gray-900 to-gray-800">
+        <h1 className="text-xl font-black uppercase tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-cyan-400 flex items-center gap-2">
+          <Radio className="text-blue-500 animate-pulse" size={20} />
+          COASTAL INTEL
+        </h1>
+        <p className="text-[10px] text-gray-500 font-mono mt-1 tracking-wider">CHANGE DETECTION PLATFORM</p>
       </div>
 
-      <div className="p-4 space-y-6 overflow-y-auto flex-1 dark:text-gray-300">
+      <div className="flex-1 overflow-y-auto custom-scrollbar p-6 space-y-8">
 
-        {/* Search */}
-        <div className="relative group">
-          <Search className="absolute left-3 top-2.5 text-gray-400 group-focus-within:text-indigo-500 transition-colors" size={16} />
-          <input
-            type="text"
-            placeholder="Search layers..."
-            className="w-full pl-10 pr-4 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all dark:placeholder-gray-600"
-            value={filters.search}
-            onChange={(e) => handleFilterChange('search', e.target.value)}
-          />
+        {/* View Mode Toggle */}
+        <div className="flex bg-gray-950 p-1 rounded-lg border border-gray-800">
+          <button
+            onClick={() => setViewMode('standard')}
+            className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-md text-xs font-bold uppercase transition-all ${viewMode === 'standard' ? 'bg-gray-800 text-white shadow-lg border border-gray-700' : 'text-gray-500 hover:text-gray-300'}`}
+          >
+            <LayoutDashboard size={14} /> Dashboard
+          </button>
+          <button
+            onClick={() => setViewMode('analytical')}
+            className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-md text-xs font-bold uppercase transition-all ${viewMode === 'analytical' ? 'bg-cyan-900/30 text-cyan-400 shadow-lg border border-cyan-800/50' : 'text-gray-500 hover:text-gray-300'}`}
+          >
+            <SplitSquareHorizontal size={14} /> Analytical
+          </button>
         </div>
 
-        {/* Global Selectors */}
+        {/* Filters */}
         <div className="space-y-4">
-          <div className="flex items-center gap-2 text-xs font-black uppercase tracking-widest text-gray-400 dark:text-gray-500">
-            <Settings size={14} /> Project parameters
-          </div>
-
-          <div className="space-y-3 bg-gray-50 dark:bg-gray-900/50 p-4 rounded-2xl border border-gray-100 dark:border-gray-800">
-            <div>
-              <label className="text-[10px] font-bold uppercase text-gray-400 mb-1 block">Survey Site</label>
-              <select
-                className="w-full px-3 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-sm font-medium focus:ring-2 focus:ring-indigo-500/20 outline-none"
-                value={filters.site}
-                onChange={(e) => handleFilterChange('site', e.target.value)}
-              >
-                <option value="">Select a Site</option>
-                {SITES.map(s => <option key={s} value={s}>Site {s}</option>)}
-              </select>
-            </div>
-
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="text-[10px] font-bold uppercase text-gray-400 mb-1 block">Baseline Year</label>
-                <select
-                  className="w-full px-3 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-sm font-medium focus:ring-2 focus:ring-indigo-500/20 outline-none"
-                  value={baselineYear}
-                  onChange={(e) => setBaselineYear(Number(e.target.value))}
-                >
-                  {YEARS.map(y => <option key={y} value={y}>{y}</option>)}
-                </select>
-              </div>
-              <div>
-                <label className="text-[10px] font-bold uppercase text-gray-400 mb-1 block">Analysis Year</label>
-                <select
-                  className="w-full px-3 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-sm font-medium focus:ring-2 focus:ring-indigo-500/20 outline-none"
-                  value={filters.year}
-                  onChange={(e) => handleFilterChange('year', e.target.value)}
-                >
-                  <option value="">Latest (2020)</option>
-                  {YEARS.filter(y => y > baselineYear).map(y => <option key={y} value={y}>{y}</option>)}
-                </select>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Action Buttons */}
-        <div className="space-y-2">
-          <button
-            onClick={onRunAnalysis}
-            disabled={analysisLoading || !filters.site}
-            className={`w-full py-3 px-4 rounded-xl shadow-lg transition-all flex items-center justify-center gap-2 font-bold text-sm ${analysisLoading ? 'bg-gray-600 cursor-wait' : 'bg-indigo-600 hover:bg-indigo-700 text-white hover:scale-[1.02] active:scale-95'}`}
-          >
-            <BarChart3 size={18} />
-            {analysisLoading ? 'Computing...' : 'Run Change Analysis'}
-          </button>
-
-          <button
-            onClick={onTimeMode}
-            className={`w-full py-3 px-4 rounded-xl transition-all flex items-center justify-center gap-2 font-bold text-sm border-2 ${isTimeMode ? 'bg-indigo-50 border-indigo-200 text-indigo-700 dark:bg-indigo-900/20 dark:border-indigo-800' : 'bg-white dark:bg-gray-900 border-gray-100 dark:border-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-50'}`}
-          >
-            {isTimeMode ? <Pause size={18} /> : <Play size={18} />}
-            {isTimeMode ? 'Stop Animation' : 'Animate Shoreline Change'}
-          </button>
-        </div>
-
-        {/* Diagnostics Toggle */}
-        <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800">
-          <div className="flex items-center gap-2">
-            <Database size={14} className="text-gray-400" />
-            <span className="text-xs font-bold text-gray-500 uppercase">Dev Diagnostics</span>
-          </div>
-          <button
-            onClick={() => setDebugMode(!debugMode)}
-            className={`w-10 h-5 rounded-full relative transition-colors ${debugMode ? 'bg-green-500' : 'bg-gray-300 dark:bg-gray-700'}`}
-          >
-            <div className={`absolute top-1 w-3 h-3 bg-white rounded-full transition-all ${debugMode ? 'left-6' : 'left-1'}`}></div>
-          </button>
-        </div>
-
-        {/* Available Layers */}
-        <div className="space-y-3">
-          <div className="flex justify-between items-center px-1">
-            <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2">
-              <Database size={12} /> Layers ({availableLayers.length})
-            </label>
+          <div className="flex items-center gap-2 text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">
+            <MapIcon size={12} /> Survey Configuration
           </div>
 
           <div className="space-y-1">
-            {availableLayers.length === 0 && (
-              <div className="p-8 text-center bg-gray-50 dark:bg-gray-900 rounded-2xl border border-dashed border-gray-200 dark:border-gray-800">
-                <p className="text-xs text-gray-400">No layers found for current filters.</p>
-              </div>
-            )}
-            {availableLayers.map(layer => (
-              <motion.div
-                whileHover={{ x: 4 }}
-                key={layer.layer_name}
-                className={`flex items-center justify-between p-3 rounded-xl border border-transparent transition-all cursor-pointer ${activeLayers.includes(layer.layer_name) ? 'bg-indigo-50/50 dark:bg-indigo-900/10 border-indigo-100 dark:border-indigo-900/30' : 'hover:bg-gray-50 dark:hover:bg-gray-900'}`}
-                onClick={() => toggleLayer(layer.layer_name)}
-              >
-                <div className="flex items-center gap-3">
-                  <div className={`w-2 h-2 rounded-full ${layer.year === 2011 ? 'bg-red-500' : 'bg-sky-500'}`}></div>
-                  <div>
-                    <p className={`text-xs font-bold ${activeLayers.includes(layer.layer_name) ? 'text-indigo-700 dark:text-indigo-400' : 'text-gray-700 dark:text-gray-300'}`}>{layer.layer_name}</p>
-                    <p className="text-[9px] text-gray-400 font-medium uppercase tracking-tighter">{layer.site} • {layer.year} • {layer.parameter}</p>
-                  </div>
-                </div>
-              </motion.div>
-            ))}
+            <label className="text-[10px] uppercase font-bold text-gray-500">Target Site</label>
+            <div className="grid grid-cols-2 gap-2">
+              {sites.map(s => (
+                <button
+                  key={s}
+                  onClick={() => setFilters({ ...filters, site: s })}
+                  className={`py-2 px-3 rounded-md text-xs font-bold border transition-all ${filters.site === s ? 'bg-blue-600 border-blue-500 text-white shadow-blue-900/50 shadow-lg' : 'bg-gray-950 border-gray-800 text-gray-400 hover:border-gray-700'}`}
+                >
+                  Site {s}
+                </button>
+              ))}
+            </div>
           </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-1">
+              <label className="text-[10px] uppercase font-bold text-gray-500">Baseline Year</label>
+              <select
+                value={baselineYear}
+                onChange={(e) => setBaselineYear(Number(e.target.value))}
+                className="w-full bg-gray-950 border border-gray-800 rounded-md py-2 px-3 text-sm text-white focus:ring-2 focus:ring-blue-500 focus:outline-none"
+              >
+                {YEARS.map(y => (
+                  <option key={y} value={y}>{y}</option>
+                ))}
+              </select>
+            </div>
+            <div className="space-y-1">
+              <label className="text-[10px] uppercase font-bold text-gray-500">Analysis Year</label>
+              <select
+                value={filters.year || '2020'}
+                onChange={(e) => setFilters({ ...filters, year: e.target.value })}
+                className="w-full bg-gray-950 border border-gray-800 rounded-md py-2 px-3 text-sm text-white focus:ring-2 focus:ring-cyan-500 focus:outline-none"
+              >
+                {YEARS.filter(y => y > baselineYear).map(y => (
+                  <option key={y} value={y}>{y}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+        </div>
+
+        {/* Action Button */}
+        <button
+          onClick={onRunAnalysis}
+          disabled={analysisLoading}
+          className="w-full relative group overflow-hidden bg-gradient-to-r from-blue-600 to-cyan-500 p-[1px] rounded-lg"
+        >
+          <div className="bg-gray-900/50 group-hover:bg-transparent transition-colors duration-300 rounded-[7px] w-full h-full p-3 flex items-center justify-center gap-3">
+            {analysisLoading ? <Loader2 className="animate-spin" /> : <Play fill="currentColor" size={16} />}
+            <span className="font-bold text-sm tracking-wide uppercase">
+              {analysisLoading ? 'Processing...' : 'Run Change Analysis'}
+            </span>
+          </div>
+        </button>
+
+        {/* Playback Controls */}
+        {viewMode === 'standard' && (
+          <div className="p-4 bg-gray-800/30 border border-white/5 rounded-xl space-y-3">
+            <div className="flex items-center justify-between text-xs text-gray-400 font-bold uppercase">
+              <span>Timeline Playback</span>
+              <span className={`w-2 h-2 rounded-full ${isTimeMode ? 'bg-green-500 animate-pulse' : 'bg-gray-600'}`}></span>
+            </div>
+            <button
+              onClick={onTimeMode}
+              className={`w-full py-2 flex items-center justify-center gap-2 rounded-md text-xs font-bold uppercase transition-all border ${isTimeMode ? 'bg-red-500/20 border-red-500 text-red-400 hover:bg-red-500/30' : 'bg-gray-800 border-gray-700 text-gray-300 hover:bg-gray-700'}`}
+            >
+              {isTimeMode ? <><StopCircle size={16} /> Stop Animation</> : <><Play size={16} /> Start Animation</>}
+            </button>
+          </div>
+        )}
+
+        {/* Diagnostics Toggle */}
+        <div className="pt-6 border-t border-gray-800">
+          <button
+            onClick={() => setDebugMode(!debugMode)}
+            className={`flex items-center gap-2 text-xs font-bold uppercase tracking-wider ${debugMode ? 'text-green-400' : 'text-gray-600 hover:text-gray-400'} transition-colors`}
+          >
+            <Settings size={14} />
+            Dev Diagnostics: {debugMode ? 'ON' : 'OFF'}
+          </button>
         </div>
       </div>
     </div>

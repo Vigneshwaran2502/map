@@ -24,8 +24,8 @@ const getMetadata = () => {
 // API: Get Sites
 app.get('/api/sites', (req, res) => {
   res.json([
-    { id: 'A', name: 'Site A (Mumbai North)', center: [19.0760, 72.8777] },
-    { id: 'C', name: 'Site C (Thane Creek)', center: [19.2000, 72.9781] }
+    { id: 'A', name: 'Site A (Juhu Beach)', center: [19.1000, 72.8260] },
+    { id: 'C', name: 'Site C (Thane Creek)', center: [19.1600, 72.9850] }
   ]);
 });
 
@@ -47,24 +47,49 @@ app.get('/api/metadata', (req, res) => {
 
 // Helper to generate mock shoreline based on site, year, and jitter
 const generateShoreline = (site: string, year: number) => {
-  const baseLat = site === 'A' ? 19.0760 : 19.2000;
-  const baseLng = site === 'A' ? 72.8777 : 72.9781;
+  // Site A: Juhu Beach Area (Mumbai West Coast) - North-South orientation
+  // Site C: Thane Creek - North-South orientation
 
-  // Create a base sine-wave like shoreline
+  const isSiteA = site === 'A';
+
+  // Starting Points (South-ish)
+  const baseLat = isSiteA ? 19.0850 : 19.1300;
+  const baseLng = isSiteA ? 72.8260 : 72.9850;
+
   const points = [];
-  const numPoints = 50;
-  const spread = 0.05;
+  const numPoints = 80;
+  // Span of the coastline in degrees (Latitude)
+  const latSpan = 0.06; // ~6-7km
 
-  // Year-based shift: later years move "inward" (erosion) or "outward" (accretion)
-  // We'll simulate a general trend of erosion (moving inland)
-  const yearOffset = (year - 2011) * 0.0005;
+  // Year-based shift: 
+  // For Site A (West Coast), erosion means moving East (inland). 
+  // 1 degree lat = ~111km. 0.0001 deg = ~11m.
+  // Erosion: +Lng (East) for West coast.
+  const yearOffset = (year - 2011) * 0.00008; // ~8m per year shift
 
   for (let i = 0; i <= numPoints; i++) {
     const fraction = i / numPoints;
-    const lng = baseLng + (fraction * spread);
-    // Add some noise that is consistent for the year but different across years
-    const noise = Math.sin(fraction * 10) * 0.002 + Math.cos(fraction * 5) * 0.001;
-    const lat = baseLat + noise + yearOffset + (Math.random() * 0.0001); // Random for "realism"
+
+    // North-South Line: Vary Latitude
+    const lat = baseLat + (fraction * latSpan);
+
+    // Wiggle Longitude
+    // Create a natural looking curve (approximate Juhu curve)
+    // Juhu curves slightly outwards (West) then in.
+    const curve = Math.sin(fraction * Math.PI) * 0.003;
+    const noise = Math.sin(fraction * 15) * 0.0005 + Math.cos(fraction * 8) * 0.0003;
+
+    let lng = baseLng - curve + noise;
+
+    // Apply erosion/accretion shift
+    // Site A: Erosion moves line East (+)
+    if (isSiteA) {
+      lng += yearOffset;
+    } else {
+      // Site C: Creek erosion might widen it (move West/East away from center? Simplified: Move West)
+      lng -= yearOffset;
+    }
+
     points.push([lng, lat]);
   }
 
@@ -85,13 +110,14 @@ app.get('/api/geojson/:layer', (req, res) => {
     geojson = generateShoreline(metadata.site, metadata.year);
   } else {
     // Boundary polygon
-    const baseLat = metadata.site === 'A' ? 19.0760 : 19.2000;
-    const baseLng = metadata.site === 'A' ? 72.8777 : 72.9781;
+    // Boundary polygon
+    const baseLat = metadata.site === 'A' ? 19.0850 : 19.1300;
+    const baseLng = metadata.site === 'A' ? 72.8260 : 72.9850;
     geojson = turf.polygon([[
       [baseLng - 0.01, baseLat - 0.01],
-      [baseLng + 0.06, baseLat - 0.01],
-      [baseLng + 0.06, baseLat + 0.02],
-      [baseLng - 0.01, baseLat + 0.02],
+      [baseLng + 0.02, baseLat - 0.01],
+      [baseLng + 0.02, baseLat + 0.07],
+      [baseLng - 0.01, baseLat + 0.07],
       [baseLng - 0.01, baseLat - 0.01]
     ]]);
   }
