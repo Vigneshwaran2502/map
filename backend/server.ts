@@ -14,6 +14,10 @@ const PORT = 3001;
 app.use(cors());
 app.use(express.json());
 
+// Import Ingest Router
+import ingestRouter from './ingest.js';
+app.use('/api', ingestRouter);
+
 // Load Metadata
 const metadataPath = path.join(__dirname, 'metadata.json');
 const getMetadata = () => {
@@ -226,6 +230,65 @@ app.post('/api/analysis/shoreline-change', (req, res) => {
       message: error instanceof Error ? error.message : 'Unknown error'
     });
   }
+});
+
+// API: On-Demand Point Analysis (Global Playground)
+app.post('/api/analyze-point', (req, res) => {
+  const { lat, lng } = req.body;
+  if (!lat || !lng) return res.status(400).json({ error: 'Missing coordinates' });
+
+  // Demo Data Snapping
+  const cities = [
+    { name: 'Mumbai', lat: 19.0760, lng: 72.8777, risk: 'HIGH', erosion: '2.5 m/yr' },
+    { name: 'Chennai', lat: 13.0827, lng: 80.2707, risk: 'MODERATE', erosion: '1.2 m/yr' },
+    { name: 'Miami', lat: 25.7617, lng: -80.1918, risk: 'CRITICAL', erosion: '5.0 m/yr' },
+    { name: 'Jakarta', lat: -6.2088, lng: 106.8456, risk: 'HIGH', erosion: '4.1 m/yr' }
+  ];
+
+  const closestCity = cities.find(c => {
+    const dist = Math.sqrt(Math.pow(c.lat - lat, 2) + Math.pow(c.lng - lng, 2));
+    return dist < 1.0; // Snap within ~100km
+  });
+
+  // Procedural Generation of "History" for this point
+  const years = [2010, 2015, 2020, 2024];
+  const shorelineHistory = years.map(year => {
+    // Create a local snippet of shoreline
+    const points = [];
+    const baseLat = parseFloat(lat) - 0.02;
+
+    // Randomized erosion factor based on location hash
+    // stronger erosion if closestCity exists
+    const baseFactor = closestCity ? 0.0003 : 0.0001;
+    const erosionFactor = (Math.sin(lat * 100) + Math.cos(lng * 100)) * baseFactor;
+    const erosionMeters = erosionFactor * 111000; // approx deg to meters
+
+    for (let i = 0; i < 20; i++) {
+      const l = baseLat + (i * 0.002);
+      const w = Math.sin(i * 0.5) * 0.001;
+      const drift = (year - 2010) * erosionFactor;
+
+      points.push([parseFloat(lng) + w + drift, l]);
+    }
+    return {
+      year,
+      changeMeters: parseFloat(((year - 2010) * erosionMeters).toFixed(1)),
+      geometry: turf.lineString(points).geometry
+    };
+  });
+
+  const report = {
+    location: { lat, lng },
+    // Use city data if snapped, else procedural
+    riskLevel: closestCity ? closestCity.risk : (Math.random() > 0.5 ? 'HIGH' : 'MODERATE'),
+    erosionRate: closestCity ? closestCity.erosion : (Math.random() * 2 + 0.5).toFixed(2) + ' m/yr',
+    soilType: ['Sandy', 'Clay', 'Rocky'][Math.floor(Math.random() * 3)],
+    history: shorelineHistory,
+    isDemoData: !!closestCity,
+    demoLocation: closestCity?.name
+  };
+
+  res.json(report);
 });
 
 app.listen(PORT, () => {

@@ -2,15 +2,21 @@ import React, { useState, useEffect } from 'react';
 import { Sidebar } from './components/Sidebar';
 import { MapView } from './components/MapView';
 import { AnalyticalView } from './components/AnalyticalView';
+import { UploadModal } from './components/UploadModal';
 import { ChangeInsights } from './components/ChangeInsights';
 import { MetadataCatalogue } from './components/MetadataCatalogue';
+import { PrecisionLayout } from './components/demo/PrecisionLayout';
+import { PrecisionMap } from './components/demo/PrecisionMap';
+import { CoastalAnalysisPanel } from './components/analytical/CoastalAnalysisPanel';
 import { FilterState, LayerMetadata } from './types';
 import { fetchMetadata } from './services/api';
 import { useCoastalAnalysis } from './hooks/useCoastalAnalysis';
 
 const App: React.FC = () => {
   // --- STATE ---
-  const [viewMode, setViewMode] = useState<'standard' | 'analytical' | 'metadata'>('standard');
+  const [viewMode, setViewMode] = useState<'standard' | 'analytical' | 'metadata' | 'playground' | 'precision_demo'>('standard');
+  const [playgroundTool, setPlaygroundTool] = useState<'draw' | 'select' | 'buffer' | null>(null);
+  const [showAnalysisPanel, setShowAnalysisPanel] = useState(false);
 
   const [filters, setFilters] = useState<FilterState>({
     site: 'A',
@@ -23,6 +29,7 @@ const App: React.FC = () => {
   const [availableLayers, setAvailableLayers] = useState<LayerMetadata[]>([]);
   const [activeLayers, setActiveLayers] = useState<string[]>([]);
   const [showInsights, setShowInsights] = useState(false);
+  const [showUpload, setShowUpload] = useState(false);
 
   // Time Animation State
   const [isTimeMode, setIsTimeMode] = useState(false);
@@ -109,7 +116,7 @@ const App: React.FC = () => {
   const targetYear = Number(filters.year || 2020);
 
   return (
-    <div className="flex h-screen w-screen overflow-hidden bg-black font-sans selection:bg-cyan-500 selection:text-black">
+    <div className="flex h-screen w-screen overflow-hidden bg-[#020617] font-sans selection:bg-cyan-500 selection:text-black">
 
       <Sidebar
         filters={filters}
@@ -127,14 +134,22 @@ const App: React.FC = () => {
         setBaselineYear={setBaselineYear}
         viewMode={viewMode}
         setViewMode={setViewMode}
+        playgroundTool={playgroundTool}
+        setPlaygroundTool={setPlaygroundTool}
+        onOpenUpload={() => setShowUpload(true)}
+        onOpenAnalysis={() => setShowAnalysisPanel(true)}
       />
 
-      <main className="flex-1 relative flex flex-col bg-gray-950">
+      {showUpload && <UploadModal onClose={() => setShowUpload(false)} />}
+      {showAnalysisPanel && <CoastalAnalysisPanel onClose={() => setShowAnalysisPanel(false)} />}
 
-        {viewMode === 'standard' ? (
+      <main className="flex-1 relative flex flex-col bg-[#020617]">
+
+        {viewMode === 'standard' || viewMode === 'playground' ? (
           <MapView
-            activeLayers={activeLayers}
+            activeLayers={viewMode === 'playground' ? [] : activeLayers}
             allLayers={availableLayers}
+            isPlayground={viewMode === 'playground'}
             siteFilter={filters.site || 'A'}
             heatmapPoints={results?.heatmapPoints}
             debugMode={debugMode}
@@ -142,6 +157,8 @@ const App: React.FC = () => {
             isTimeMode={isTimeMode}
             baselineYear={baselineYear}
             comparisonYear={targetYear}
+            activeTool={playgroundTool}
+            onToolComplete={() => setPlaygroundTool(null)}
           />
         ) : viewMode === 'analytical' ? (
           <AnalyticalView
@@ -149,7 +166,12 @@ const App: React.FC = () => {
             baselineYear={baselineYear}
             targetYear={targetYear}
             heatmapPoints={results?.heatmapPoints}
+            onYearChange={(year) => setFilters(prev => ({ ...prev, year: year.toString() }))}
           />
+        ) : viewMode === 'precision_demo' ? (
+          <PrecisionLayout>
+            <PrecisionMap currentYear={2020} />
+          </PrecisionLayout>
         ) : (
           <MetadataCatalogue />
         )}

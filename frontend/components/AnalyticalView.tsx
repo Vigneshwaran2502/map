@@ -3,12 +3,17 @@ import { MapContainer, TileLayer, useMap } from 'react-leaflet';
 import { fetchGeoJSON } from '../services/api';
 import { GlowPolyline } from './GlowPolyline';
 import { HeatmapLayer } from './HeatmapLayer';
+import { StatPanel } from './analytical/StatPanel';
+import { TrendChart } from './analytical/TrendChart';
+import { TimeSlider } from './analytical/TimeSlider';
+import { YEARS } from '../types';
 
 interface AnalyticalViewProps {
     site: string;
     baselineYear: number;
     targetYear: number;
     heatmapPoints?: number[][];
+    onYearChange: (year: number) => void;
 }
 
 const SyncMap: React.FC<{ site: string }> = ({ site }) => {
@@ -25,10 +30,12 @@ export const AnalyticalView: React.FC<AnalyticalViewProps> = ({
     site,
     baselineYear,
     targetYear,
-    heatmapPoints
+    heatmapPoints,
+    onYearChange
 }) => {
     const [baselineData, setBaselineData] = useState<any>(null);
     const [targetData, setTargetData] = useState<any>(null);
+    const [isPlaying, setIsPlaying] = useState(false);
 
     // Force map resize to fix grey tiles issue
     useEffect(() => {
@@ -36,6 +43,17 @@ export const AnalyticalView: React.FC<AnalyticalViewProps> = ({
             window.dispatchEvent(new Event('resize'));
         }, 500);
     }, []);
+
+    // Animation Loop
+    useEffect(() => {
+        let interval: any;
+        if (isPlaying) {
+            interval = setInterval(() => {
+                onYearChange(targetYear >= 2020 ? 2011 : targetYear + 1);
+            }, 1000);
+        }
+        return () => clearInterval(interval);
+    }, [isPlaying, targetYear, onYearChange]);
 
     useEffect(() => {
         // Fetch specifically the layers needed for this view
@@ -51,66 +69,77 @@ export const AnalyticalView: React.FC<AnalyticalViewProps> = ({
         }).catch(console.error);
     }, [site, baselineYear, targetYear]);
 
-    const mapStyle = { height: '100%', width: '100%', background: '#f8fafc' };
-
-    // Positron (Light Gray) for clean analytics
-    const basemapUrl = "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png";
+    // Dark Matter basemap for high-contrast dashboard
+    const basemapUrl = "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png";
 
     return (
-        <div className="flex h-full w-full flex-col bg-white dark:bg-gray-950">
-            <div className="p-4 border-b border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900">
-                <h2 className="text-xl font-bold uppercase tracking-widest text-gray-800 dark:text-white">
-                    Analytical Precision
-                </h2>
-                <p className="text-sm text-gray-500 dark:text-gray-400">
-                    Variation Highlighting Techniques
-                </p>
-            </div>
+        <div className="flex h-full w-full flex-col bg-gray-950 overflow-hidden relative">
 
-            <div className="flex-1 flex flex-row divide-x divide-gray-200 dark:divide-gray-800">
-                {/* LEFT PANE: OVERLAY VIEW */}
-                <div className="flex-1 relative flex flex-col">
-                    <div className="absolute top-0 left-0 right-0 z-[500] bg-gray-100/90 dark:bg-gray-800/90 px-4 py-2 text-xs font-bold uppercase border-b border-gray-300 dark:border-gray-700 shadow-sm backdrop-blur">
-                        Overlay View
-                    </div>
-                    <MapContainer center={[19.0760, 72.8777]} zoom={13} style={mapStyle} zoomControl={false}>
+            {/* Main Content Area */}
+            <div className="flex-1 flex flex-row relative overflow-hidden">
+
+                {/* LARGE CENTRAL MAP */}
+                <div className="flex-1 relative z-0">
+                    <MapContainer center={[19.0760, 72.8777]} zoom={13} style={{ height: '100%', width: '100%', background: '#020617' }} zoomControl={false}>
                         <SyncMap site={site} />
-                        <TileLayer url={basemapUrl} />
+                        <TileLayer
+                            url={basemapUrl}
+                            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
+                        />
 
+                        {/* Visual Layers Unified */}
                         {baselineData && (
-                            <GlowPolyline data={baselineData} color="#ef4444" weight={3} opacity={0.6} />
+                            <GlowPolyline data={baselineData} color="#ef4444" weight={2} opacity={0.5} />
                         )}
                         {targetData && (
-                            <GlowPolyline data={targetData} color="#06b6d4" weight={4} opacity={1} />
+                            <GlowPolyline data={targetData} color="#22d3ee" weight={4} opacity={1} />
                         )}
-                    </MapContainer>
-                    <div className="p-3 bg-white dark:bg-gray-900 text-xs text-gray-600 dark:text-gray-400 border-t border-gray-200 dark:border-gray-800">
-                        Side-by-side comparison of historical positions (Red: {baselineYear} vs Cyan: {targetYear}).
-                    </div>
-                </div>
-
-                {/* RIGHT PANE: DIFFERENTIAL VIEW */}
-                <div className="flex-1 relative flex flex-col">
-                    <div className="absolute top-0 left-0 right-0 z-[500] bg-gray-100/90 dark:bg-gray-800/90 px-4 py-2 text-xs font-bold uppercase border-b border-gray-300 dark:border-gray-700 shadow-sm backdrop-blur">
-                        Differential View
-                    </div>
-                    <MapContainer center={[19.0760, 72.8777]} zoom={13} style={mapStyle} zoomControl={false}>
-                        <SyncMap site={site} />
-                        <TileLayer url={basemapUrl} />
-
-                        {/* Show target line as reference */}
-                        {targetData && (
-                            <GlowPolyline data={targetData} color="#06b6d4" weight={2} opacity={0.3} />
-                        )}
-
-                        {/* Heatmap */}
                         {heatmapPoints && <HeatmapLayer points={heatmapPoints} />}
 
                     </MapContainer>
-                    <div className="p-3 bg-white dark:bg-gray-900 text-xs text-gray-600 dark:text-gray-400 border-t border-gray-200 dark:border-gray-800">
-                        Heatmap styling visualizes magnitude of erosion or accretion.
+
+                    {/* Floating Map Controls / Overlay Label */}
+                    <div className="absolute top-4 left-4 z-[400] flex flex-col gap-2">
+                        <div className="px-4 py-2 bg-gray-900/90 backdrop-blur-md border border-gray-800 rounded-lg shadow-2xl">
+                            <h2 className="text-sm font-black uppercase text-white tracking-widest flex items-center gap-2">
+                                <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
+                                Live Monitoring
+                            </h2>
+                        </div>
                     </div>
                 </div>
+
+                {/* RIGHT SIDEBAR - ANALYTICAL PANELS */}
+                <div className="w-[380px] bg-gray-900/40 backdrop-blur-xl border-l border-gray-800 flex flex-col overflow-y-auto custom-scrollbar z-10 p-6 space-y-6">
+                    <div>
+                        <h3 className="text-xs font-bold uppercase text-gray-500 tracking-widest mb-4 border-b border-gray-800 pb-2">Ecological Impact Stats</h3>
+                        <StatPanel site={site} />
+                    </div>
+
+                    <div>
+                        <h3 className="text-xs font-bold uppercase text-gray-500 tracking-widest mb-4 border-b border-gray-800 pb-2">Trend Analysis</h3>
+                        <TrendChart />
+                    </div>
+
+                    <div className="p-4 bg-blue-900/10 border border-blue-900/30 rounded-xl">
+                        <h4 className="text-cyan-400 font-bold text-xs uppercase mb-2">AI Insight</h4>
+                        <p className="text-gray-400 text-xs leading-relaxed">
+                            Accretion patterns in the southern sector suggest a natural sediment shift. Erosion risk remains critical in the northern zone (Sector A-12). Recommended intervention: Mangrove restoration.
+                        </p>
+                    </div>
+                </div>
+
+            </div>
+
+            {/* BOTTOM PANEL - TIME SLIDER */}
+            <div className="h-24 bg-gray-900 border-t border-gray-800 z-50">
+                <TimeSlider
+                    years={YEARS}
+                    selectedYear={targetYear}
+                    onYearChange={onYearChange}
+                    isPlaying={isPlaying}
+                    onTogglePlay={() => setIsPlaying(!isPlaying)}
+                />
             </div>
         </div>
     );
