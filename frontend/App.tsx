@@ -3,13 +3,14 @@ import { Sidebar } from './components/Sidebar';
 import { MapView } from './components/MapView';
 import { AnalyticalView } from './components/AnalyticalView';
 import { ChangeInsights } from './components/ChangeInsights';
+import { MetadataCatalogue } from './components/MetadataCatalogue';
 import { FilterState, LayerMetadata } from './types';
 import { fetchMetadata } from './services/api';
 import { useCoastalAnalysis } from './hooks/useCoastalAnalysis';
 
 const App: React.FC = () => {
   // --- STATE ---
-  const [viewMode, setViewMode] = useState<'standard' | 'analytical'>('standard');
+  const [viewMode, setViewMode] = useState<'standard' | 'analytical' | 'metadata'>('standard');
 
   const [filters, setFilters] = useState<FilterState>({
     site: 'A',
@@ -142,13 +143,15 @@ const App: React.FC = () => {
             baselineYear={baselineYear}
             comparisonYear={targetYear}
           />
-        ) : (
+        ) : viewMode === 'analytical' ? (
           <AnalyticalView
             site={filters.site || 'A'}
             baselineYear={baselineYear}
             targetYear={targetYear}
             heatmapPoints={results?.heatmapPoints}
           />
+        ) : (
+          <MetadataCatalogue />
         )}
 
         {/* Floating Insights Panel (Right) - Visible in both modes or just standard? User requirement implies Right Panel. */}

@@ -1,6 +1,6 @@
 import React from 'react';
 import { FilterState, LayerMetadata, YEARS } from '../types';
-import { Play, Loader2, Map as MapIcon, Layers, Radio, Settings, StopCircle, LayoutDashboard, SplitSquareHorizontal } from 'lucide-react';
+import { Play, Loader2, Map as MapIcon, Layers, Radio, Settings, StopCircle, LayoutDashboard, SplitSquareHorizontal, Table } from 'lucide-react';
 
 interface SidebarProps {
   filters: FilterState;
@@ -16,8 +16,8 @@ interface SidebarProps {
   setDebugMode: (mode: boolean) => void;
   baselineYear: number;
   setBaselineYear: (year: number) => void;
-  viewMode: 'standard' | 'analytical';
-  setViewMode: (mode: 'standard' | 'analytical') => void;
+  viewMode: 'standard' | 'analytical' | 'metadata';
+  setViewMode: (mode: 'standard' | 'analytical' | 'metadata') => void;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -56,6 +56,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
             className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-md text-xs font-bold uppercase transition-all ${viewMode === 'analytical' ? 'bg-cyan-900/30 text-cyan-400 shadow-lg border border-cyan-800/50' : 'text-gray-500 hover:text-gray-300'}`}
           >
             <SplitSquareHorizontal size={14} /> Analytical
+          </button>
+          <button
+            onClick={() => setViewMode('metadata')}
+            className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-md text-xs font-bold uppercase transition-all ${viewMode === 'metadata' ? 'bg-indigo-900/30 text-indigo-400 shadow-lg border border-indigo-800/50' : 'text-gray-500 hover:text-gray-300'}`}
+          >
+            <Table size={14} /> Metadata
           </button>
         </div>
 
